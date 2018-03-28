@@ -1,10 +1,12 @@
 import copy
 import pprint
 
+from helpers.statistics import getStatistics
 from stores.RouteStore import RouteStore
 
 MAX_PASSENGER_COUNT = 4
 MAX_MERGED_TRIPS = 4
+
 
 def getPassengerCount(tripsSet):
     passengers = 0
@@ -13,14 +15,15 @@ def getPassengerCount(tripsSet):
 
     return passengers
 
+
 def calculateScore(tripSet1, stripSet2):
-    # TODO :
     originalDistance = 0
     combinedList = tripSet1 + stripSet2
     for trip in combinedList:
         originalDistance += trip['trip_distance']
 
-    tripStartLocation = combinedList[0]['pickup_location']['coordinates']  # TODO : picking the pickup point of first trip at random. see if wee can fix this
+    # TODO : picking the pickup point of first trip at random. see if wee can fix this
+    tripStartLocation = combinedList[0]['pickup_location']['coordinates']
     waypoints = []
     waypoints.append(combinedList[0]['dropoff_location']['coordinates'])
 
@@ -31,17 +34,20 @@ def calculateScore(tripSet1, stripSet2):
 
     return originalDistance - routingInfo['distance']
 
+
 def mergeSets(list1, list2):
     return list1 + list2
 
+# Actual public method. Others are just helpers
+def maxMatching(heuristicMatchedSets):
 
-def maxMatching(trips):
+    # __trips = copy.deepcopy(trips)
+    #
+    # currentMerges = []
+    # for trip in __trips:
+    #     currentMerges.append({'trips': [trip]})
 
-    __trips = copy.deepcopy(trips)
-
-    currentMerges = []
-    for trip in __trips:
-        currentMerges.append({'trips': [trip]})
+    currentMerges = heuristicMatchedSets
 
     for tripMergeCounter in range(MAX_MERGED_TRIPS):
 
@@ -76,7 +82,6 @@ def maxMatching(trips):
                 weightedList.append({ 'i' : i, 'j': j, 'weight': mergeScores[i, j] })
 
         newMerges = []
-
         copiedIdxSet = {}
         while len(weightedList) > 0:
             weightedList = sorted(weightedList, key=lambda k: k['weight'])
@@ -113,11 +118,15 @@ def maxMatching(trips):
                     tmpList.append(item)
 
             weightedList = tmpList
-            newMerges.append({'trips': mergeSets(currentMerges[i]['trips'], currentMerges[j]['trips'])})
+            newMerges.append({'trips': mergeSets(currentMerges[i]['trips'], currentMerges[j]['trips']),
+                              'distanceGain': maxWeightItem['weight']})
 
         currentMerges = newMerges
 
+        stats = getStatistics(currentMerges)
+        print("Max Matching - iter {0} :: Original : {1}, Merged : {2}".format(tripMergeCounter + 1, stats['totalOriginalDistance'], stats['totalMergedDistance']))
 
-    pprint.pprint(newMerges)
+
+    # pprint.pprint(newMerges)
 
     return newMerges

@@ -14,6 +14,8 @@ from joblib import Parallel, delayed
 import pprint
 
 from helpers.distance import points2distance, decdeg2dms
+from helpers.statistics import getStatistics
+from matching.HeuristicMatching import heutisticMatch
 from matching.MaxMatching import maxMatching
 
 
@@ -103,27 +105,25 @@ if __name__ == '__main__':
 
     tripStore = TripStore()
 
-    # startDateTime = datetime.datetime(2016, 1, 1, 14, 10, 0)
-    startDateTime = datetime.datetime(2016, 1, 1, 00, 00, 0)
+    startDateTime = datetime.datetime(2016, 1, 1, 14, 10, 0)
+    # startDateTime = datetime.datetime(2016, 1, 1, 00, 00, 0)
     endDateTime = startDateTime + datetime.timedelta(seconds=5 * 60)  # trip merge window of 5 minutes
 
     for i in range(10):
-
-        start = timer()
 
         if i != 0:
             startDateTime = endDateTime
 
         endDateTime = startDateTime + datetime.timedelta(seconds=5 * 60)  # trip merge window of 5 minutes
 
+        start = timer()
+
         trips = tripStore.getTrips(startDateTime, endDateTime)
 
         # routeInfoList = getAllRouteInfo(trips)
         # avgStatList = getAllAvgStats(TripStore(), trips)
-        # distanceMatrix = getAllPairwiseDistances2(trips)
-        #
-        # end = timer()
-        #
+        distanceMatrix = getAllPairwiseDistances2(trips)
+
         # # no. of infeasible combinations
         # feasibleL1Merges = {}
         # for i in range(len(trips)):
@@ -134,9 +134,13 @@ if __name__ == '__main__':
         #     for j in range(i):
         #         if distanceMatrix[i, j] > trips[i]['trip_distance'] and distanceMatrix[i, j] > trips[j]['trip_distance']:
         #             feasibleL1Merges[i, j] = False
-        #         if trips[i]['passenger_count'] + trips[j]['passenger_count'] > MAX_PASSENGER_COUNT:
+        #         elif trips[i]['passenger_count'] + trips[j]['passenger_count'] > MAX_PASSENGER_COUNT:
         #             feasibleL1Merges[i, j] = False
-        #
+        #         else:
+        #             opt1 = abs(distanceMatrix[i, j] - trips[i]['trip_distance'])
+        #             opt2 = abs(distanceMatrix[i, j] - trips[j]['trip_distance'])
+        #             feasibleL1Merges[i, j] = max(opt1, opt2)
+
         # infeasibleL1Combinations = 0
         # # just counting; nothing insidious
         # for i in range(len(trips)):
@@ -147,8 +151,28 @@ if __name__ == '__main__':
         # print('Runtime Stats  : Iteration {0}, Trip Requests {1}, Time Taken {2}s, StartTime {3}, Infeasible L1 Combinations {4}, Feasible L1 Combinations {5}'
         #       .format(i, len(trips), end - start, str(startDateTime), infeasibleL1Combinations, ((pow(len(trips), 2) - len(trips)) / 2) - infeasibleL1Combinations))
 
-        matching = maxMatching(trips)
+        heuristicMatchedSets = heutisticMatch(trips, distanceMatrix)
 
         end = timer()
+        print('Heuristic match runtime : {0} sec'.format(end - start))
+        print('Initial Trips : {0}, Heuristic Matched Trips : {1}'.format(len(trips), len(heuristicMatchedSets)))
 
-        print('Runtime : {0} sec'.format(end - start))
+        stats = getStatistics(heuristicMatchedSets)
+        print("Heuristic :: Original : {0}, Merged : {1}".format(stats['totalOriginalDistance'], stats['totalMergedDistance']))
+
+        print('\n~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~\n')
+
+        start = timer()
+        # matching = maxMatching(trips)
+        matching = maxMatching(heuristicMatchedSets)
+        end = timer()
+
+        print('Max match runtime : {0} sec'.format(end - start))
+        print('Heuristic Matched Trips : {0}, Max Matched Trips : {1}'.format(len(heuristicMatchedSets), len(matching)))
+
+        print('\n~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~\n')
+
+        stats = getStatistics(matching)
+        print("Final :: Original : {0}, Merged : {1}".format(stats['totalOriginalDistance'], stats['totalMergedDistance']))
+
+        print('\n~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~\n')
