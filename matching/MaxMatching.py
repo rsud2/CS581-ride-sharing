@@ -1,8 +1,10 @@
 import copy
+import pprint
 
 from stores.RouteStore import RouteStore
 
 MAX_PASSENGER_COUNT = 4
+MAX_MERGED_TRIPS = 4
 
 def getPassengerCount(tripsSet):
     passengers = 0
@@ -18,15 +20,22 @@ def calculateScore(tripSet1, stripSet2):
     for trip in combinedList:
         originalDistance += trip['trip_distance']
 
-    routedDistance = RouteStore().getRouteInfo()
+    tripStartLocation = combinedList[0]['pickup_location']['coordinates']  # TODO : picking the pickup point of first trip at random. see if wee can fix this
+    waypoints = []
+    waypoints.append(combinedList[0]['dropoff_location']['coordinates'])
 
-    return 0
+    for i in range(1, len(combinedList)):
+        waypoints.append(combinedList[i]['dropoff_location']['coordinates'])
+
+    routingInfo = RouteStore().getRouteInfo(tripStartLocation, waypoints)
+
+    return originalDistance - routingInfo['distance']
 
 def mergeSets(list1, list2):
     return list1 + list2
 
 
-def maxMatching(trips, distanceMatrix):
+def maxMatching(trips):
 
     __trips = copy.deepcopy(trips)
 
@@ -34,51 +43,81 @@ def maxMatching(trips, distanceMatrix):
     for trip in __trips:
         currentMerges.append({'trips': [trip]})
 
-    mergeScores = {}
+    for tripMergeCounter in range(MAX_MERGED_TRIPS):
 
-    # init
-    for i in range(len(currentMerges)):
-        for j in range(i):
-            mergeScores[i, j] = 0
+        mergeScores = {}
 
-    # invalidate based on passenger count
-    for i in range(len(currentMerges)):
-        for j in range(i):
-            passengers = getPassengerCount(currentMerges[i]['trips']) + getPassengerCount(currentMerges[j]['trips'])
-            if passengers > MAX_PASSENGER_COUNT:
-                mergeScores[i, j] = float('-inf')
+        # init
+        for i in range(len(currentMerges)):
+            for j in range(i):
+                mergeScores[i, j] = 0
 
-    # update scores
-    for i in range(len(currentMerges)):
-        for j in range(i):
+        # invalidate based on passenger count
+        for i in range(len(currentMerges)):
+            for j in range(i):
+                passengers = getPassengerCount(currentMerges[i]['trips']) + getPassengerCount(currentMerges[j]['trips'])
+                if passengers > MAX_PASSENGER_COUNT:
+                    mergeScores[i, j] = float('-inf')
 
-            # skip invalidated combinations
-            if mergeScores[i, j] == float('-inf'):
-                continue
+        # update scores  ## TODO : parallelize this nested loop
+        for i in range(len(currentMerges)):
+            for j in range(i):
 
-            # asdf
-            mergeScores[i, j] = calculateScore(currentMerges[i]['trips'], currentMerges[j]['trips'])
+                # skip invalidated combinations
+                if mergeScores[i, j] == float('-inf'):
+                    continue
 
-    # pick maximums to get next level of merges
-    weightedList = []
-    for i in range(len(currentMerges)):
-        for j in range(i):
-            weightedList.append({ 'i' : i, 'j': j, 'weight': mergeScores[i, j] })
+                mergeScores[i, j] = calculateScore(currentMerges[i]['trips'], currentMerges[j]['trips'])
 
-    newMerges = []
+        # pick maximums to get next level of merges
+        weightedList = []
+        for i in range(len(currentMerges)):
+            for j in range(i):
+                weightedList.append({ 'i' : i, 'j': j, 'weight': mergeScores[i, j] })
 
-    while len(weightedList) > 0:
-        weightedList = sorted(weightedList, key=lambda k: k['weight'])
-        maxWeightItem = weightedList[-1]
+        newMerges = []
 
-        # remove all items from weightedList where i or j have same values as in maxWeightItem
-        tmpList = []
-        for item in weightedList:
-            if item['i'] != maxWeightItem['i'] and item['j'] != maxWeightItem['j']:
-                tmpList.append(item)
+        copiedIdxSet = {}
+        while len(weightedList) > 0:
+            weightedList = sorted(weightedList, key=lambda k: k['weight'])
+            maxWeightItem = weightedList[-1]
 
-        weightedList = tmpList
+            # no more matchings with a positive score; don't try to merge
+            if maxWeightItem['weight'] <= 0:
+                # TODO : all remaining items in weightedList need to be carried forward to 'newMerges' as-is
+                remainingIdxSet = {}
+                for item in weightedList:
+                    i = item['i']
+                    j = item['j']
 
-        newMerges.append({'trips': mergeSets(currentMerges[maxWeightItem['i']]['trips'], currentMerges[maxWeightItem['j']]['trips'])})
+                    remainingIdxSet[i] = True
+                    remainingIdxSet[j] = True
+
+                for key in list(remainingIdxSet.keys()):
+
+                    if key not in list(copiedIdxSet.keys()):
+                        newMerges.append(currentMerges[key])
+
+                break
+
+            # remove all items from weightedList where i or j have same values as in maxWeightItem
+            i = maxWeightItem['i']
+            j = maxWeightItem['j']
+
+            copiedIdxSet[i] = True
+            copiedIdxSet[j] = True
+
+            tmpList = []
+            for item in weightedList:
+                if item['i'] != i and item['j'] != j:
+                    tmpList.append(item)
+
+            weightedList = tmpList
+            newMerges.append({'trips': mergeSets(currentMerges[i]['trips'], currentMerges[j]['trips'])})
+
+        currentMerges = newMerges
 
 
+    pprint.pprint(newMerges)
+
+    return newMerges

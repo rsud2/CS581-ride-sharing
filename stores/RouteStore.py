@@ -28,7 +28,8 @@ class RouteStore:
             return {
                 'first' : tripStartLocation,
                 'waypoints' : waypoint,
-                'distance': data['routes'][0]['distance'],
+                # TODO : picking routing info for the first alternative. pick one with best metrics
+                'distance': data['routes'][0]['distance']  / 1000,
                 'weight_name': data['routes'][0]['weight_name'],
                 'weight': data['routes'][0]['weight']
             }
