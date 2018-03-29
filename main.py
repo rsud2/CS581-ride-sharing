@@ -17,6 +17,7 @@ from helpers.distance import points2distance, decdeg2dms
 from helpers.statistics import getStatistics
 from matching.HeuristicMatching import heutisticMatch
 from matching.MaxMatching import maxMatching
+from stores.StatsStore import StatsStore
 
 
 def getAvgStats(tripStore, trip):
@@ -101,7 +102,7 @@ if __name__ == '__main__':
     from stores.TripStore import TripStore
     from stores.RouteStore import RouteStore
 
-    MAX_PASSENGER_COUNT = 4
+    # MAX_PASSENGER_COUNT = 4
 
     tripStore = TripStore()
 
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     # startDateTime = datetime.datetime(2016, 1, 1, 00, 00, 0)
     endDateTime = startDateTime + datetime.timedelta(seconds=5 * 60)  # trip merge window of 5 minutes
 
-    for i in range(10):
+    for i in range(100):
 
         if i != 0:
             startDateTime = endDateTime
@@ -158,7 +159,8 @@ if __name__ == '__main__':
         print('Initial Trips : {0}, Heuristic Matched Trips : {1}'.format(len(trips), len(heuristicMatchedSets)))
 
         stats = getStatistics(heuristicMatchedSets)
-        print("Heuristic :: Original : {0}, Merged : {1}".format(stats['totalOriginalDistance'], stats['totalMergedDistance']))
+        print("Heuristic :: Original : {0}, Merged : {1}"
+              .format(stats['totalOriginalDistance'], stats['totalMergedDistance']))
 
         print('\n~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~\n')
 
@@ -174,5 +176,7 @@ if __name__ == '__main__':
 
         stats = getStatistics(matching)
         print("Final :: Original : {0}, Merged : {1}".format(stats['totalOriginalDistance'], stats['totalMergedDistance']))
+
+        StatsStore().save(stats)
 
         print('\n~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~\n')

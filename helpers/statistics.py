@@ -1,6 +1,7 @@
 def getStatistics(mergedTrips):
     totalOriginalDistance = 0
     totalMergedDistance = 0
+    originalTripCount = 0
 
     for mergedTrip in mergedTrips:
         individualDistanceSum = 0
@@ -12,5 +13,11 @@ def getStatistics(mergedTrips):
 
         totalOriginalDistance += individualDistanceSum
         totalMergedDistance += mergedDistance
+        originalTripCount += len(mergedTrip['trips'])
 
-    return {'totalOriginalDistance': totalOriginalDistance, 'totalMergedDistance': totalMergedDistance}
+    mergedTripCount = len(mergedTrips)
+
+    return {'totalOriginalDistance': totalOriginalDistance,
+            'totalMergedDistance': totalMergedDistance,
+            'originalTripCount': originalTripCount,
+            'mergedTripCount': mergedTripCount}
