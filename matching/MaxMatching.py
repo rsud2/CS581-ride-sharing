@@ -1,11 +1,12 @@
 import copy
 import pprint
 
+from config import RideSharingConfig
 from helpers.statistics import getStatistics
 from stores.RouteStore import RouteStore
 
-MAX_PASSENGER_COUNT = 4
-MAX_MERGED_TRIPS = 4
+# MAX_PASSENGER_COUNT = 5
+# MAX_MERGED_TRIPS = 5
 
 
 def getPassengerCount(tripsSet):
@@ -30,7 +31,7 @@ def calculateScore(tripSet1, stripSet2):
     for i in range(1, len(combinedList)):
         waypoints.append(combinedList[i]['dropoff_location']['coordinates'])
 
-    routingInfo = RouteStore().getRouteInfo(tripStartLocation, waypoints)
+    routingInfo = RouteStore().getRouteInfo2(tripStartLocation, waypoints)
 
     return originalDistance - routingInfo['distance']
 
@@ -49,7 +50,7 @@ def maxMatching(heuristicMatchedSets):
 
     currentMerges = heuristicMatchedSets
 
-    for tripMergeCounter in range(MAX_MERGED_TRIPS):
+    for tripMergeCounter in range(RideSharingConfig.MAX_MERGED_TRIPS):
 
         mergeScores = {}
 
@@ -62,7 +63,7 @@ def maxMatching(heuristicMatchedSets):
         for i in range(len(currentMerges)):
             for j in range(i):
                 passengers = getPassengerCount(currentMerges[i]['trips']) + getPassengerCount(currentMerges[j]['trips'])
-                if passengers > MAX_PASSENGER_COUNT:
+                if passengers > RideSharingConfig.MAX_PASSENGER_COUNT:
                     mergeScores[i, j] = float('-inf')
 
         # update scores  ## TODO : parallelize this nested loop

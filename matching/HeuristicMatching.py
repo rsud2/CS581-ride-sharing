@@ -1,6 +1,8 @@
+from config import RideSharingConfig
 from stores.RouteStore import RouteStore
 
-MAX_PASSENGER_COUNT = 4
+# EUCLIDEAN_DISTANCE_DIFF_MULTIPLIER = 1
+# MAX_PASSENGER_COUNT = 4
 
 def heutisticMatch(trips, distanceMatrix):
     # no. of infeasible combinations
@@ -11,9 +13,11 @@ def heutisticMatch(trips, distanceMatrix):
 
     for i in range(len(trips)):
         for j in range(i):
-            if distanceMatrix[i, j] > trips[i]['trip_distance'] and distanceMatrix[i, j] > trips[j]['trip_distance']:
+            if (RideSharingConfig.EUCLIDEAN_DISTANCE_DIFF_MULTIPLIER * distanceMatrix[i, j]) > trips[i]['trip_distance'] \
+                    and (RideSharingConfig.EUCLIDEAN_DISTANCE_DIFF_MULTIPLIER * distanceMatrix[i, j]) > trips[j]['trip_distance']:
+
                 feasibleL1Merges[i, j] = False
-            elif trips[i]['passenger_count'] + trips[j]['passenger_count'] > MAX_PASSENGER_COUNT:
+            elif trips[i]['passenger_count'] + trips[j]['passenger_count'] > RideSharingConfig.MAX_PASSENGER_COUNT:
                 feasibleL1Merges[i, j] = False
             else:
                 opt1 = abs(distanceMatrix[i, j] - trips[i]['trip_distance'])
@@ -59,9 +63,6 @@ def heutisticMatch(trips, distanceMatrix):
         i = maxWeightItem['i']
         j = maxWeightItem['j']
 
-        copiedIdxSet[i] = True
-        copiedIdxSet[j] = True
-
         tmpList = []
         for item in weightedList:
             if item['i'] != i and item['j'] != j:
@@ -69,8 +70,15 @@ def heutisticMatch(trips, distanceMatrix):
 
         weightedList = tmpList
 
-        routeInfo = RouteStore().getRouteInfo(trips[i]['pickup_location']['coordinates'], [ trips[i]['dropoff_location']['coordinates'], trips[j]['dropoff_location']['coordinates'] ])
+        routeInfo = RouteStore().getRouteInfo2(trips[i]['pickup_location']['coordinates'], [ trips[i]['dropoff_location']['coordinates'], trips[j]['dropoff_location']['coordinates'] ])
         distanceGain = trips[i]['trip_distance'] + trips[j]['trip_distance'] - routeInfo['distance']
-        newMerges.append({'trips': [trips[i], trips[j]], 'distanceGain': distanceGain})
+
+        if distanceGain > 0:
+            newMerges.append({'trips': [trips[i], trips[j]], 'distanceGain': distanceGain})
+
+            copiedIdxSet[i] = True
+            copiedIdxSet[j] = True
+        else:
+            weightedList.append({'i': i, 'j': j, 'weight': distanceGain})
 
     return newMerges
