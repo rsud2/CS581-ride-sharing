@@ -7,6 +7,7 @@ from joblib import Parallel, delayed
 from config import RideSharingConfig
 from helpers.distance import points2distance, decdeg2dms
 from helpers.statistics import getStatistics
+from matching.HeuristicMatching import heutisticMatch
 from matching.MaxMatching import maxMatching
 from stores.StatsStore import StatsStore
 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
 
         # # routeInfoList = getAllRouteInfo(trips)
         # # avgStatList = getAllAvgStats(TripStore(), trips)
-        # distanceMatrix = getAllPairwiseDistances2(trips)
+        distanceMatrix = getAllPairwiseDistances2(trips)
         #
         # # # no. of infeasible combinations
         # # feasibleL1Merges = {}
@@ -143,7 +144,17 @@ if __name__ == '__main__':
         # # print('Runtime Stats  : Iteration {0}, Trip Requests {1}, Time Taken {2}s, StartTime {3}, Infeasible L1 Combinations {4}, Feasible L1 Combinations {5}'
         # #       .format(i, len(trips), end - start, str(startDateTime), infeasibleL1Combinations, ((pow(len(trips), 2) - len(trips)) / 2) - infeasibleL1Combinations))
         #
-        # heuristicMatchedSets = heutisticMatch(trips, distanceMatrix)
+
+        start = timer()
+
+        heuristicMatchedSets = []
+
+        if RideSharingConfig.USE_HEURISTICS:
+            heuristicMatchedSets = heutisticMatch(trips, distanceMatrix)
+        else:
+            for trip in trips:
+                heuristicMatchedSets.append({'trips': [trip], 'distanceGain': 0})
+
         #
         # end = timer()
         # print('Heuristic match runtime : {0} sec'.format(end - start))
@@ -155,11 +166,6 @@ if __name__ == '__main__':
         #
         # print('\n~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~*~~~~\n')
 
-        heuristicMatchedSets = []
-        for trip in trips:
-            heuristicMatchedSets.append({'trips': [trip], 'distanceGain': 0})
-
-        start = timer()
         # matching = maxMatching(trips)
         matching = maxMatching(heuristicMatchedSets)
         end = timer()
@@ -173,6 +179,7 @@ if __name__ == '__main__':
         stats['runningTime'] = end - start
         stats['MAX_PASSENGER_COUNT'] = RideSharingConfig.MAX_PASSENGER_COUNT
         stats['MAX_MERGED_TRIPS'] = RideSharingConfig.MAX_MERGED_TRIPS
+        stats['USE_HEURISTICS'] = RideSharingConfig.USE_HEURISTICS
 
         print("Final :: Original : {0}, Merged : {1}".format(stats['totalOriginalDistance'],
                                                              stats['totalMergedDistance']))
