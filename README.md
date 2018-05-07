@@ -1,6 +1,7 @@
 # CS581-ride-sharing
 
 Prerequisites : 
+* Python >= 3.5
 * Obtain OSM map files for New York : http://download.geofabrik.de/north-america/us/new-york-latest.osm.pbf 
 * Install OSRM : https://github.com/Project-OSRM/osrm-backend/wiki/Docker-Recipes
 * Install MongoDB : https://docs.mongodb.com/tutorials/install-mongodb-on-ubuntu/
