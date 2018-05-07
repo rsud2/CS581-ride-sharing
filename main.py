@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     startDateTime = datetime.datetime(2016, 1, 1, 14, 10, 0)  # + datetime.timedelta(seconds=100 * 5 * 60)
     # startDateTime = datetime.datetime(2016, 1, 1, 00, 00, 0)
-    endDateTime = startDateTime + datetime.timedelta(seconds=5 * 60)  # trip merge window of 5 minutes
+    endDateTime = startDateTime + datetime.timedelta(seconds=RideSharingConfig.WINDOW_SIZE * 60)  # trip merge window of 5 minutes
 
     for i in range(100):
 
@@ -180,6 +180,7 @@ if __name__ == '__main__':
         stats['MAX_PASSENGER_COUNT'] = RideSharingConfig.MAX_PASSENGER_COUNT
         stats['MAX_MERGED_TRIPS'] = RideSharingConfig.MAX_MERGED_TRIPS
         stats['USE_HEURISTICS'] = RideSharingConfig.USE_HEURISTICS
+        stats['WINDOW_SIZE'] = RideSharingConfig.WINDOW_SIZE
 
         print("Final :: Original : {0}, Merged : {1}".format(stats['totalOriginalDistance'],
                                                              stats['totalMergedDistance']))
