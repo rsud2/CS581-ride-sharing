@@ -14,34 +14,4 @@ Set configuration values used for different experiments in `config.py`
 Run `main.py`
 This should create a collection maned "stats" under the "trip_info" database
 
-Sample query to get info from the stats collection : 
-
-`db.getCollection('stats').aggregate([
-    {
-        $match: {'MAX_PASSENGER_COUNT' : <enter_passenger_count>, "USE_HEURISTICS": <boolean_value_as_needed>}
-    }, {
-        $group: {
-            _id:{ 
-              "WINDOW_SIZE": "$WINDOW_SIZE"
-              , 'MAX_PASSENGER_COUNT': '$MAX_PASSENGER_COUNT'      
-            }, 
-            totalOriginalDistance: {$sum:"$totalOriginalDistance"},
-            totalMergedDistance : {$sum:"$totalMergedDistance"},
-            originalTripCount: {$sum:"$originalTripCount"},
-            mergedTripCount: {$sum:"$mergedTripCount"},
-            runningTime: {$avg:"$runningTime"},
-            MAX_PASSENGER_COUNT: {$avg: "$MAX_PASSENGER_COUNT"},
-            "WINDOW_SIZE": {$avg: "$WINDOW_SIZE"}
-        }
-    }, {
-            
-            $project: {
-                distSaved: {$divide: [ {$subtract: ["$totalOriginalDistance", "$totalMergedDistance"]}, "$totalOriginalDistance"] },
-                tripsSaved: {$divide: [ {$subtract: ["$originalTripCount", "$mergedTripCount"]}, "$originalTripCount"] },
-                runningTime: "$runningTime",
-                MAX_PASSENGER_COUNT: "$MAX_PASSENGER_COUNT",
-                "WINDOW_SIZE": "$WINDOW_SIZE"
-            }
-            
-        } 
-])`
+For a sample query to get info from the stats collection see sample_stats_query.txt
